@@ -21,6 +21,11 @@
 			"org.seedatlas.xaero.fabric.SeedCrackerBridge"
 		]
 	},
+	"jars": [
+		{
+			"file": "META-INF/jars/seedcrackerX-2.16.2.jar"
+		}
+	],
 	"mixins": [
 		{
 			"config": "seedatlas_xaero.client.mixins.json",

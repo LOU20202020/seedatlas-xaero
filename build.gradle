@@ -84,6 +84,13 @@ jar {
 	from("THIRD_PARTY_NOTICES.md")
 	from("src/main/native/ENGINE_LICENSE")
 	from("LEGAL_NOTICE.md")
+
+	// SeedCrackerX (MIT) is optional at runtime, but shipped nested so a single jar installs
+	// everything: Fabric loads META-INF/jars entries declared in fabric.mod.json.
+	from("libs/seedcrackerx-2.16.2.jar") {
+		into "META-INF/jars"
+		rename { "seedcrackerX-2.16.2.jar" }
+	}
 }
 
 // configure the maven publication

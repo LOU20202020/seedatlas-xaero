@@ -27,7 +27,7 @@
 - **Java 25**
 - Fabric API
 - [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) **≥ 1.47.0**
-- (可选)[SeedCrackerX](https://github.com/19MisterX98/SeedCrackerX) —— 只用于反推未知种子,不装不影响其他功能
+- ~~SeedCrackerX~~ —— **已内置在这个 jar 里**,不需要单独安装,也**不要**再往 mods 里放第二份
 
 纯客户端模组,服务器不需要装。
 
@@ -74,7 +74,7 @@
 - 两边都满了它会自己开始破解,一般 1～5 分钟;破解结果自动填进种子输入框,不用手动抄
 - 同一个页面上写着这三步,不用记命令;收集出错时页面里有「清空已收集的结构数据」
 
-SeedCrackerX 是可选依赖:删掉它的 jar,Seed Atlas 照常运行。
+SeedCrackerX(MIT)已经打在这个 jar 里,装一个文件就有全部功能;它的许可证随包附带。
 
 ## 结构详情的覆盖面
 
@@ -133,9 +133,10 @@ Requires Fabric API and Xaero's World Map ≥ 1.47.0 (Java 25, Loader ≥ 0.19.5
 Left column shows four labels (no button chrome, auto-placed below Xaero's own buttons):
 structure toggles, biome highlight, nearest structure, nearest biome. Click the seed bar along the
 top edge to type a seed (number or any text); it applies to the dimension the map is showing, and
-the Overworld seed also generates every dimension without its own. If SeedCrackerX is installed, the
-same screen shows how many structure bits it has collected and fills in the seed by itself once it
-cracks; that mod is optional and can be removed without affecting anything else.
+the Overworld seed also generates every dimension without its own. SeedCrackerX (MIT) is bundled
+inside this jar: the same screen shows how many structure bits it has collected and fills in the
+seed by itself once it cracks, so a single file installs everything. Do not add a second copy of
+SeedCrackerX to the mods folder.
 
 Loot prediction covers 11 structures that upstream generates pieces and loot salt for; types
 without data are greyed out rather than filled with guesses.

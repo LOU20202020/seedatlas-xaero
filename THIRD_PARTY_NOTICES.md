@@ -32,13 +32,16 @@ Minecraft, Fabric Loader, Fabric API, and Xaero's World Map are external
 runtime dependencies and are not bundled in this mod jar. Their respective
 licenses apply to their own distributions.
 
-## SeedCrackerX (optional interop)
+## SeedCrackerX (bundled)
 
 SeedCrackerX, Copyright (c) KaptainWutax and 19MisterX98, is licensed under the
 MIT License: https://github.com/19MisterX98/SeedCrackerX
 
-`libs/seedcrackerx-api.jar` holds only its public hand-off interface
-(`kaptainwutax.seedcrackerX.api.SeedCrackerAPI`, from release 2.16.2). It is a
-compile-time dependency so the optional bridge can implement that interface.
-No SeedCrackerX code is bundled into the released jar, and the bridge class is
-loaded only when SeedCrackerX is installed.
+The released jar bundles SeedCrackerX 2.16.2 under `META-INF/jars/` and declares
+it in `fabric.mod.json`, so one file installs both. Its MIT licence ships inside
+that nested jar as `LICENSE_seedcrackerX`.
+
+`libs/seedcrackerx-api.jar` and `libs/seedcrackerx-2.16.2.jar` are the unmodified
+upstream artifacts used at build time; only the public hand-off interface
+(`kaptainwutax.seedcrackerX.api.SeedCrackerAPI`) is referenced by Seed Atlas
+code, and the bridge class is loaded only when SeedCrackerX is present.
