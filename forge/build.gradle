@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '7.0.17'
+}
+apply from: '../gradle/loader-common.gradle'
+
+minecraft {
+    runs {
+        configureEach {
+            workingDir = layout.projectDirectory.dir('run')
+            jvmArgs '--enable-native-access=ALL-UNNAMED'
+            args '--mixin', 'seedatlas_xaero.forge.mixins.json'
+            mods { seedatlas_xaero { source sourceSets.main } }
+        }
+        register('client') {
+            if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+                jvmArgs '-XstartOnFirstThread'
+            }
+        }
+        register('server') { args '--nogui' }
+    }
+}
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+}
+// Xaero's Maven artifact is a thin development JAR: it retains JarJar
+// metadata for XaeroLib but omits the referenced nested JAR. Forge's JarJar
+// selector rejects that metadata even when XaeroLib is on the classpath.
+// Strip only that metadata from a development copy; never bundle Xaero in our JAR.
+configurations { xaeroDevRuntime }
+def xaeroDependency = "xaero.map:xaeroworldmap-forge-${minecraft_version}:${xaero_world_map_version}"
+def prepareXaeroDevRuntime = tasks.register('prepareXaeroDevRuntime', Zip) {
+    archiveFileName = "xaeroworldmap-forge-${minecraft_version}-${xaero_world_map_version}-dev.jar"
+    destinationDirectory = layout.buildDirectory.dir('dev-mods')
+    from { configurations.xaeroDevRuntime.collect { zipTree(it) } }
+    exclude 'META-INF/jarjar/metadata.json'
+}
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${forge_version}")
+    compileOnly(xaeroDependency) { exclude group: 'net.minecraftforge' }
+    xaeroDevRuntime(xaeroDependency) { transitive = false }
+    runtimeOnly 'xaero.lib:xaerolib-forge-26.3:1.8.3'
+    runtimeOnly files(prepareXaeroDevRuntime.flatMap { it.archiveFile })
+}
+
+jar {
+    manifest.attributes 'MixinConfigs': 'seedatlas_xaero.forge.mixins.json'
+}
+
+// Forge 66 ships upstream Mixin 0.8.7, whose compatibility enum ends before
+// JAVA_25. These four mixins use no Java 25 features: emit Java 21 bytecode
+// for them, while the application and FFM facade still target Java 25.
+sourceSets.main.java.exclude 'org/seedatlas/xaero/mixin/**'
+def forgeMixinClasses = layout.buildDirectory.dir('classes/forgeMixins')
+def compileForgeMixins = tasks.register('compileForgeMixins', JavaCompile) {
+    dependsOn tasks.named('compileJava'), tasks.named('processResources')
+    source = fileTree('../common/src/main/java') { include 'org/seedatlas/xaero/mixin/**/*.java' }
+    classpath = sourceSets.main.compileClasspath + files(tasks.named('compileJava').flatMap { it.destinationDirectory })
+    destinationDirectory = forgeMixinClasses
+    options.release = 21
+}
+// Keep JavaCompile outputs separate: its incremental cleanup would otherwise
+// delete application classes from ForgeGradle's merged source-set directory.
+def copyForgeMixins = tasks.register('copyForgeMixins', Copy) {
+    dependsOn compileForgeMixins
+    from forgeMixinClasses
+    into tasks.named('compileJava').flatMap { it.destinationDirectory }
+    outputs.upToDateWhen { false }
+}
+tasks.named('classes') { dependsOn copyForgeMixins }
+
+tasks.named('sourcesJar') {
+    from('../common/src/main/java') { include 'org/seedatlas/xaero/mixin/**/*.java' }
+}

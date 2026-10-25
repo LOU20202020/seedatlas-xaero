@@ -1,0 +1,238 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = "${project.mod_version}-mc${project.minecraft_version}-fabric"
+group = project.maven_group
+
+// Fabric is built from the repository root; keep its override separate from
+// the shared default read by the standalone Forge and NeoForge builds.
+ext.xaero_world_map_version = providers.gradleProperty('xaero_world_map_version_fabric')
+	.orElse(providers.gradleProperty('xaero_world_map_version')).get()
+
+repositories {
+	maven {
+		name = "Xaero's Maven"
+		url = 'https://chocolateminecraft.com/maven'
+	}
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"seedatlas_xaero" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+sourceSets.client.java.srcDir 'common/src/main/java'
+sourceSets.main.resources.srcDir 'common/src/main/resources'
+
+dependencies {
+	// To change the versions see the gradle.properties file
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Xaero's World Map is a required external mod. It is never bundled into
+	// the produced jar.
+	clientImplementation "xaero.map:xaeroworldmap-fabric-${project.minecraft_version}:${project.xaero_world_map_version}"
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+	inputs.property "xaero_world_map_version", project.xaero_world_map_version
+	exclude "natives/**/*.lib", "natives/**/*.pdb"
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version, "xaero_world_map_version": project.xaero_world_map_version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName"}
+	}
+	from("THIRD_PARTY_NOTICES.md")
+	from("src/main/native/ENGINE_LICENSE")
+	from("LEGAL_NOTICE.md")
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+		// Add repositories to publish to here.
+		// Notice: This block does NOT have the same function as the block in the top level.
+		// The repositories here will be used for publishing your artifact, not for
+		// retrieving dependencies.
+	}
+}
+
+// Exercise the actual bundled library through Java FFM, including 26.3
+// generation fixtures and concurrent biome calls, on each host platform.
+def nativeTestClasses = layout.buildDirectory.dir('classes/nativeSmokeTest')
+tasks.register('compileNativeSmokeTest', JavaCompile) {
+	dependsOn tasks.named('compileClientJava')
+	source = fileTree('src/main/native/tests') { include 'BiomeAreaFfmTest.java' }
+	classpath = files(sourceSets.client.output.classesDirs)
+	destinationDirectory = nativeTestClasses
+}
+tasks.register('nativeSmokeTest', JavaExec) {
+	dependsOn tasks.named('jar'), tasks.named('compileNativeSmokeTest')
+	classpath = files(nativeTestClasses, tasks.named('jar').flatMap { it.archiveFile })
+	mainClass = 'BiomeAreaFfmTest'
+	jvmArgs '-ea', '--enable-native-access=ALL-UNNAMED'
+}
+tasks.named('check') {
+	dependsOn tasks.named('nativeSmokeTest')
+}
+
+// Verify completion persistence and world/seed isolation without launching a game.
+def progressTestClasses = layout.buildDirectory.dir('classes/progressTest')
+tasks.register('compileProgressTest', JavaCompile) {
+	dependsOn tasks.named('clientClasses')
+	source = fileTree('src/testProgress/java') { include '**/*.java' }
+	classpath = sourceSets.client.compileClasspath + sourceSets.client.output
+	destinationDirectory = progressTestClasses
+}
+tasks.register('progressPersistenceTest', JavaExec) {
+	dependsOn tasks.named('compileProgressTest')
+	classpath = files(progressTestClasses) + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.config.StructureProgressTest'
+}
+tasks.named('check') {
+	dependsOn tasks.named('progressPersistenceTest')
+}
+
+// Guard visible icon sizes, aspect ratios and transparent rail gaps without a game window.
+def iconTestClasses = layout.buildDirectory.dir('classes/iconTest')
+tasks.register('compileIconTest', JavaCompile) {
+	dependsOn tasks.named('clientClasses')
+	source = fileTree('src/testIcons/java') { include '**/*.java' }
+	classpath = sourceSets.client.compileClasspath + sourceSets.client.output
+	destinationDirectory = iconTestClasses
+}
+tasks.register('iconLayoutTest', JavaExec) {
+	dependsOn tasks.named('compileIconTest')
+	classpath = files(iconTestClasses) + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.integration.icon.IconLayoutTest'
+	jvmArgs '-Djava.awt.headless=true'
+}
+tasks.named('check') {
+	dependsOn tasks.named('iconLayoutTest')
+}
+
+// Guard the Seed Atlas style biome highlight colours without a game window.
+def biomeHighlightTestClasses = layout.buildDirectory.dir('classes/biomeHighlightTest')
+tasks.register('compileBiomeHighlightTest', JavaCompile) {
+	dependsOn tasks.named('clientClasses')
+	source = fileTree('src/testBiome/java') { include '**/*.java' }
+	classpath = sourceSets.client.compileClasspath + sourceSets.client.output
+	destinationDirectory = biomeHighlightTestClasses
+}
+tasks.register('biomeHighlightTest', JavaExec) {
+	dependsOn tasks.named('compileBiomeHighlightTest')
+	classpath = files(biomeHighlightTestClasses) + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.biome.BiomeHighlightTest'
+}
+tasks.named('check') {
+	dependsOn tasks.named('biomeHighlightTest')
+}
+
+// Bootstrap vanilla registries in a separate JVM from the non-bootstrapped biome tests.
+tasks.register('netherCaveMaskTest', JavaExec) {
+	dependsOn tasks.named('compileBiomeHighlightTest'), tasks.named('processResources')
+	classpath = files(biomeHighlightTestClasses) + sourceSets.main.output + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.integration.biome.NetherCaveMaskTest'
+	jvmArgs '--enable-native-access=ALL-UNNAMED'
+	workingDir = layout.buildDirectory.dir('netherCaveMaskTest').get().asFile
+	doFirst { workingDir.mkdirs() }
+}
+
+tasks.named('check') { dependsOn tasks.named('netherCaveMaskTest') }
+
+// Seed-only vanilla density parity and sampler cache checks, isolated from client/bootstrap state.
+tasks.register('overworldTerrainSamplerTest', JavaExec) {
+	dependsOn tasks.named('compileBiomeHighlightTest'), tasks.named('processResources')
+	classpath = files(biomeHighlightTestClasses) + sourceSets.main.output + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.integration.biome.OverworldTerrainSamplerTest'
+	workingDir = layout.buildDirectory.dir('overworldTerrainSamplerTest').get().asFile
+	if (providers.gradleProperty('overworldSamplerBenchmark').isPresent()) args '--benchmark'
+	doFirst { workingDir.mkdirs() }
+}
+
+tasks.named('check') { dependsOn tasks.named('overworldTerrainSamplerTest') }
+
+// Opt-in: first-pass cost of one map tile per dimension and zoom step (not part of check).
+tasks.register('dimensionTileBenchmark', JavaExec) {
+	dependsOn tasks.named('compileBiomeHighlightTest'), tasks.named('processResources')
+	classpath = files(biomeHighlightTestClasses) + sourceSets.main.output + sourceSets.client.runtimeClasspath
+	mainClass = 'org.seedatlas.xaero.integration.biome.DimensionTileBenchmark'
+	jvmArgs '--enable-native-access=ALL-UNNAMED'
+	workingDir = layout.buildDirectory.dir('dimensionTileBenchmark').get().asFile
+	doFirst { workingDir.mkdirs() }
+}
+
+// Keep the loader-neutral client command tree equivalent across all builds.
+def commandTestClasses = layout.buildDirectory.dir('classes/commandTest')
+tasks.register('compileCommandTest', JavaCompile) {
+    dependsOn tasks.named('clientClasses')
+    source = fileTree('src/testCommands/java') { include '**/*.java' }
+    classpath = sourceSets.client.compileClasspath + sourceSets.client.output
+    destinationDirectory = commandTestClasses
+}
+tasks.register('commandRegistrationTest', JavaExec) {
+    dependsOn tasks.named('compileCommandTest')
+    classpath = files(commandTestClasses) + sourceSets.client.runtimeClasspath
+    mainClass = 'org.seedatlas.xaero.command.CommandRegistrationTest'
+}
+tasks.named('check') { dependsOn tasks.named('commandRegistrationTest') }
+
+// Run the runtime Xaero compatibility check (mixin targets, captured locals, linkage) without Minecraft.
+def xaeroTestClasses = layout.buildDirectory.dir('classes/xaeroCompatibilityTest')
+tasks.register('compileXaeroCompatibilityTest', JavaCompile) {
+    dependsOn tasks.named('clientClasses')
+    source = fileTree('src/testXaero/java') { include '**/*.java' }
+    classpath = sourceSets.client.compileClasspath + sourceSets.client.output
+    destinationDirectory = xaeroTestClasses
+}
+tasks.register('xaeroCompatibilityTest', JavaExec) {
+    dependsOn tasks.named('compileXaeroCompatibilityTest')
+    classpath = files(xaeroTestClasses) + sourceSets.client.runtimeClasspath
+    mainClass = 'org.seedatlas.xaero.integration.XaeroCompatibilityTest'
+    // -PxaeroCompatJar=<jar> checks a newer Xaero release against these compiled classes.
+    def compatJar = providers.gradleProperty('xaeroCompatJar')
+    if (compatJar.isPresent()) systemProperty 'seedatlas.xaeroJar', compatJar.get()
+}
+tasks.named('check') { dependsOn tasks.named('xaeroCompatibilityTest') }

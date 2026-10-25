@@ -1,0 +1,34 @@
+{
+	"schemaVersion": 1,
+	"id": "seedatlas_xaero",
+	"version": "${version}",
+	"name": "Seed Atlas for Xaero's World Map",
+	"description": "Client-side seed biome and structure layers for Xaero's World Map.",
+	"authors": [
+		"DUzzL"
+	],
+	"contact": {
+		"sources": "https://github.com/DUzzL/seed-atlas-xaero"
+	},
+	"license": "GPL-3.0-only",
+	"icon": "assets/seedatlas_xaero/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"org.seedatlas.xaero.fabric.SeedAtlasFabric"
+		]
+	},
+	"mixins": [
+		{
+			"config": "seedatlas_xaero.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*",
+		"xaeroworldmap": ">=${xaero_world_map_version}"
+	}
+}

@@ -1,0 +1,89 @@
+name: build
+on: [pull_request, push]
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+          - os: windows-2025
+            platform: windows-x86_64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: macos-15
+            platform: macos-aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: gradle/actions/wrapper-validation@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - name: Set up MinGW (C11 VLA support)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+      - name: Build and test native source (Unix)
+        if: runner.os != 'Windows'
+        run: bash scripts/native/build-native.sh ${{ matrix.platform }}
+      - name: Build and test native source (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: bash scripts/native/build-native.sh windows-x86_64
+      - name: Test checked-in library through Java FFM
+        shell: bash
+        run: bash ./gradlew nativeSmokeTest
+      - name: Test freshly built library through Java FFM
+        shell: bash
+        run: |
+          cp build/generated/native-resources/natives/${{ matrix.platform }}/seedatlas_xaero.* common/src/main/resources/natives/${{ matrix.platform }}/
+          SAX_REQUIRE_HEIGHTS=1 bash ./gradlew nativeSmokeTest --rerun-tasks
+      - uses: actions/upload-artifact@v7
+        with:
+          name: natives-${{ matrix.platform }}
+          path: build/generated/native-resources/natives/
+
+  build:
+    needs: native
+    strategy:
+      matrix:
+        loader: [fabric, forge, neoforge]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: gradle/actions/wrapper-validation@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: natives-*
+          merge-multiple: true
+          path: common/src/main/resources/natives/
+      - name: Build and test loader
+        shell: bash
+        run: |
+          if [ "${{ matrix.loader }}" = "fabric" ]; then
+            bash ./gradlew build
+          else
+            cd "${{ matrix.loader }}"
+            bash ./gradlew build
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: seedatlas-xaero-26.3-${{ matrix.loader }}
+          path: |
+            build/libs/
+            ${{ matrix.loader }}/build/libs/

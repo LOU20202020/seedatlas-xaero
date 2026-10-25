@@ -1,0 +1,33 @@
+license="GPL-3.0-only"
+
+[[mods]]
+modId="seedatlas_xaero"
+version="${version}"
+displayName="Seed Atlas for Xaero's World Map"
+authors="DUzzL"
+iconFile="assets/seedatlas_xaero/icon.png"
+description="Client-side seed biome and structure layers for Xaero's World Map."
+
+[[mixins]]
+config="seedatlas_xaero.client.mixins.json"
+
+[[dependencies.seedatlas_xaero]]
+modId="neoforge"
+type="required"
+versionRange="[26.3.0.10-beta,26.4)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.seedatlas_xaero]]
+modId="minecraft"
+type="required"
+versionRange="[26.3]"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.seedatlas_xaero]]
+modId="xaeroworldmap"
+type="required"
+versionRange="[${xaero_world_map_version},)"
+ordering="AFTER"
+side="CLIENT"

@@ -1,0 +1,76 @@
+// Shared sources and checks for the standalone Forge and NeoForge builds.
+def atlasRoot = rootDir.parentFile
+Properties atlasProperties = new Properties()
+atlasRoot.toPath().resolve('gradle.properties').withInputStream { atlasProperties.load(it) }
+['minecraft_version', 'mod_version', 'maven_group'].each {
+    ext.set(it, atlasProperties.getProperty(it))
+}
+// A loader's own Gradle properties (including -P) take precedence over the
+// repository defaults. Qualified keys also allow configuring all loaders centrally.
+def xaeroOverrideKey = "xaero_world_map_version_${project.name}"
+ext.xaero_world_map_version = providers.gradleProperty(xaeroOverrideKey)
+    .orElse(providers.gradleProperty('xaero_world_map_version'))
+    .getOrElse(atlasProperties.getProperty(xaeroOverrideKey, atlasProperties.getProperty('xaero_world_map_version')))
+version = "${mod_version}-mc${minecraft_version}-${project.name}"
+group = maven_group
+base.archivesName = atlasProperties.getProperty('archives_base_name', 'seedatlas-xaero')
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+java.withSourcesJar()
+sourceSets.main.java.srcDir new File(atlasRoot, 'common/src/main/java')
+sourceSets.main.resources.srcDir new File(atlasRoot, 'common/src/main/resources')
+
+repositories {
+    maven { url = 'https://chocolateminecraft.com/maven' }
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'xaero_world_map_version', project.xaero_world_map_version
+    def metadataProperties = [version: project.version, xaero_world_map_version: project.xaero_world_map_version]
+    filesMatching('META-INF/*.mods.toml') { expand metadataProperties }
+    filesMatching('META-INF/mods.toml') { expand metadataProperties }
+    exclude 'natives/**/*.lib', 'natives/**/*.pdb'
+}
+jar {
+    manifest.attributes 'Automatic-Module-Name': 'seedatlas_xaero'
+    from(new File(atlasRoot, 'LICENSE'))
+    from(new File(atlasRoot, 'THIRD_PARTY_NOTICES.md'))
+    from(new File(atlasRoot, 'LEGAL_NOTICE.md'))
+    from(new File(atlasRoot, 'src/main/native/ENGINE_LICENSE'))
+}
+
+// Run the upstream checks against each loader's actual compiled common sources.
+[
+    xaeroCompatibilityTest: ['src/testXaero/java', '**/*.java', 'org.seedatlas.xaero.integration.XaeroCompatibilityTest'],
+    commandRegistrationTest: ['src/testCommands/java', '**/*.java', 'org.seedatlas.xaero.command.CommandRegistrationTest'],
+    nativeSmokeTest: ['src/main/native/tests', 'BiomeAreaFfmTest.java', 'BiomeAreaFfmTest'],
+    progressPersistenceTest: ['src/testProgress/java', '**/*.java', 'org.seedatlas.xaero.config.StructureProgressTest'],
+    iconLayoutTest: ['src/testIcons/java', '**/*.java', 'org.seedatlas.xaero.integration.icon.IconLayoutTest'],
+    biomeHighlightTest: ['src/testBiome/java', '**/*.java', 'org.seedatlas.xaero.biome.BiomeHighlightTest']
+].each { taskName, spec ->
+    def classesDir = layout.buildDirectory.dir("classes/${taskName}")
+    def compileTask = tasks.register("compile${taskName.capitalize()}", JavaCompile) {
+        dependsOn tasks.named('classes')
+        source = fileTree(new File(atlasRoot, spec[0])) { include spec[1] }
+        classpath = sourceSets.main.compileClasspath + sourceSets.main.output
+        destinationDirectory = classesDir
+    }
+    def checkTask = tasks.register(taskName, JavaExec) {
+        dependsOn compileTask, tasks.named('jar')
+        classpath = files(classesDir) + sourceSets.main.runtimeClasspath
+        workingDir atlasRoot
+        mainClass = spec[2]
+        jvmArgs '-ea', '--enable-native-access=ALL-UNNAMED', '-Djava.awt.headless=true'
+        // -PxaeroCompatJar=<jar> checks a newer Xaero release against these compiled classes.
+        def compatJar = providers.gradleProperty('xaeroCompatJar')
+        if (taskName == 'xaeroCompatibilityTest' && compatJar.isPresent()) {
+            systemProperty 'seedatlas.xaeroJar', compatJar.get()
+        }
+    }
+    tasks.named('check') { dependsOn checkTask }
+}

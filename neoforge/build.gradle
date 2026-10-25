@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+apply from: '../gradle/loader-common.gradle'
+
+neoForge {
+    version = project.neo_version
+    runs {
+        client {
+            client()
+            jvmArgument '--enable-native-access=ALL-UNNAMED'
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+    mods {
+        seedatlas_xaero { sourceSet sourceSets.main }
+    }
+}
+dependencies {
+    implementation("xaero.map:xaeroworldmap-neoforge-${minecraft_version}:${xaero_world_map_version}") {
+        exclude group: 'net.neoforged'
+    }
+}
