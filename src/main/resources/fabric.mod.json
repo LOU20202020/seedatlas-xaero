@@ -16,6 +16,9 @@
 	"entrypoints": {
 		"client": [
 			"org.seedatlas.xaero.fabric.SeedAtlasFabric"
+		],
+		"seedcrackerx": [
+			"org.seedatlas.xaero.fabric.SeedCrackerBridge"
 		]
 	},
 	"mixins": [

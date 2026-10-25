@@ -112,6 +112,12 @@ public final class SeedAtlasSettingsScreen extends SeedAtlasScreen {
 			this.minecraft.gui.setScreen(new NearestScreen(this, false));
 		}).bounds(left + (thirdWidth + gap) * 2, 175, contentWidth - (thirdWidth + gap) * 2, 20).build());
 
+		this.addRenderableWidget(Button.builder(seedButtonMessage(), button -> {
+			this.commitValues();
+			this.minecraft.gui.setScreen(new SeedInputScreen(this, Dimension.OVERWORLD));
+		}).bounds(left, 200, contentWidth, 20)
+			.tooltip(Tooltip.create(Component.translatable("tooltip.seedatlas_xaero.seed"))).build());
+
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
 			.bounds((this.width - 200) / 2, this.height - 28, 200, 20)
 			.build());
@@ -151,6 +157,15 @@ public final class SeedAtlasSettingsScreen extends SeedAtlasScreen {
 		);
 
 		graphics.centeredText(this.font, seedStatus(), this.width / 2, this.height - 42, 0xFFA0A0A0);
+	}
+
+	/** "Seed: 123… · click to change", or the empty variant; the button is the entry point. */
+	private static Component seedButtonMessage() {
+		SeedAtlasConfig.SeedProfile profile = SeedAtlasClientState.activeProfile().orElse(null);
+		if (profile == null || profile.base() == null) {
+			return Component.translatable("screen.seedatlas_xaero.seed_input.open_empty");
+		}
+		return Component.translatable("screen.seedatlas_xaero.seed_input.open", profile.base().seed());
 	}
 
 	@Override

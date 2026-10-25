@@ -144,5 +144,20 @@
   "screen.seedatlas_xaero.seed_input.blank": "The seed must not be empty",
   "screen.seedatlas_xaero.seed_input.invalid": "That seed could not be read",
   "screen.seedatlas_xaero.seed_input.no_context": "No active world or multiplayer server was found",
-  "options.seedatlas_xaero.seed_bar_tip": "Click to enter a seed"
+  "options.seedatlas_xaero.seed_bar_tip": "Click to enter a seed",
+  "tooltip.seedatlas_xaero.seed": "Enter or change this world's seed",
+  "screen.seedatlas_xaero.seed_input.open": "Seed: %s · click to change",
+  "screen.seedatlas_xaero.seed_input.open_empty": "No seed yet · click to enter",
+  "screen.seedatlas_xaero.seed_input.cracker": "No seed? SeedCrackerX fills it in when it finishes cracking",
+  "screen.seedatlas_xaero.seed_input.cracker_missing": "No seed? Install SeedCrackerX to crack it in game; the result lands here",
+  "screen.seedatlas_xaero.seed_input.state_solved": "Cracked — the seed was filled in automatically",
+  "screen.seedatlas_xaero.seed_input.state_running": "Cracking… (usually 1–5 minutes)",
+  "screen.seedatlas_xaero.seed_input.state_ready": "Enough data — cracking starts by itself",
+  "screen.seedatlas_xaero.seed_input.state_more": "Missing %s regular · %s liftable",
+  "screen.seedatlas_xaero.seed_input.clear_data": "Clear collected structure data",
+  "screen.seedatlas_xaero.seed_input.guide1": "① Play near shipwrecks, desert temples, igloos, jungle temples…",
+  "screen.seedatlas_xaero.seed_input.guide2": "② Structures in view are recorded automatically, 8-9 points each",
+  "screen.seedatlas_xaero.seed_input.guide3": "③ At 32/40 it cracks by itself; the seed lands above in 1-5 min",
+  "screen.seedatlas_xaero.seed_input.bits_base": "regular %s/%s",
+  "screen.seedatlas_xaero.seed_input.bits_lift": "liftable %s/%s"
 }

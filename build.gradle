@@ -43,6 +43,10 @@ dependencies {
 	// Xaero's World Map is a required external mod. It is never bundled into
 	// the produced jar.
 	clientImplementation "xaero.map:xaeroworldmap-fabric-${project.minecraft_version}:${project.xaero_world_map_version}"
+
+	// SeedCrackerX's public hand-off interface, compile-time only and never bundled: the optional
+	// bridge class is loaded solely when that mod is installed. See compat/SeedCrackerSupport.
+	compileOnly files('libs/seedcrackerx-api.jar')
 }
 
 processResources {

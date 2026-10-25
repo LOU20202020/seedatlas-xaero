@@ -31,3 +31,14 @@ https://github.com/toolbox4minecraft/amidst.
 Minecraft, Fabric Loader, Fabric API, and Xaero's World Map are external
 runtime dependencies and are not bundled in this mod jar. Their respective
 licenses apply to their own distributions.
+
+## SeedCrackerX (optional interop)
+
+SeedCrackerX, Copyright (c) KaptainWutax and 19MisterX98, is licensed under the
+MIT License: https://github.com/19MisterX98/SeedCrackerX
+
+`libs/seedcrackerx-api.jar` holds only its public hand-off interface
+(`kaptainwutax.seedcrackerX.api.SeedCrackerAPI`, from release 2.16.2). It is a
+compile-time dependency so the optional bridge can implement that interface.
+No SeedCrackerX code is bundled into the released jar, and the bridge class is
+loaded only when SeedCrackerX is installed.

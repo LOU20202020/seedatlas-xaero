@@ -15,6 +15,8 @@
 | **结构详情** | 右键结构 → 分割图(结构块/坐标)、箱子清单、战利品预测(物品 + 数量 + 附魔等级) |
 | 最近搜索 | 从当前位置找最近的指定结构 / 指定群系 |
 | 三张地图 | 主世界、下界、末地各自独立种子(支持每个维度单独设) |
+| **种子输入** | 点地图顶部的种子条、或设置页里的「种子」按钮,数字或任意文本都能填 |
+| **反推种子** | 装 SeedCrackerX(可选)后,页内显示收集进度,凑满自动破解并填回种子 |
 | 全中文 | 物品名走游戏自带翻译;附魔、战利品表、群系名内置中文 |
 | 版本过滤 | 引擎里 1.17 及更早的老群系(Badlands Plateau、`*_Hills`)按当前版本注册表剔除,不列无效项 |
 
@@ -25,6 +27,7 @@
 - **Java 25**
 - Fabric API
 - [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) **≥ 1.47.0**
+- (可选)[SeedCrackerX](https://github.com/19MisterX98/SeedCrackerX) —— 只用于反推未知种子,不装不影响其他功能
 
 纯客户端模组,服务器不需要装。
 
@@ -62,6 +65,16 @@
 点顶部那条 **种子 …· 主世界 · X … Z …** 就能改种子:输入数字或任意文本都行,确认后群系和结构立刻按新种子重铺。在哪个维度点的就只改哪个维度;主世界的种子同时给没有单独设置的下界和末地使用(末地/下界改过之后,界面里还能一键改回跟随主世界)。
 
 单人存档自动读取种子;多人服务器按 Xaero 的服务器上下文分别保存。
+
+### 不知道种子怎么办(可选)
+
+装 [SeedCrackerX](https://github.com/19MisterX98/SeedCrackerX)(MIT,同样支持 26.3)后,种子界面下方会多出两条进度条:
+
+- **常规 x/32**、**抬升 x/40** —— 正常跑图,走到沉船、沙漠神殿、冰屋、丛林神庙、沼泽小屋、前哨站附近就会自动记录
+- 两边都满了它会自己开始破解,一般 1～5 分钟;破解结果自动填进种子输入框,不用手动抄
+- 同一个页面上写着这三步,不用记命令;收集出错时页面里有「清空已收集的结构数据」
+
+SeedCrackerX 是可选依赖:删掉它的 jar,Seed Atlas 照常运行。
 
 ## 结构详情的覆盖面
 
@@ -120,7 +133,9 @@ Requires Fabric API and Xaero's World Map ≥ 1.47.0 (Java 25, Loader ≥ 0.19.5
 Left column shows four labels (no button chrome, auto-placed below Xaero's own buttons):
 structure toggles, biome highlight, nearest structure, nearest biome. Click the seed bar along the
 top edge to type a seed (number or any text); it applies to the dimension the map is showing, and
-the Overworld seed also generates every dimension without its own.
+the Overworld seed also generates every dimension without its own. If SeedCrackerX is installed, the
+same screen shows how many structure bits it has collected and fills in the seed by itself once it
+cracks; that mod is optional and can be removed without affecting anything else.
 
 Loot prediction covers 11 structures that upstream generates pieces and loot salt for; types
 without data are greyed out rather than filled with guesses.

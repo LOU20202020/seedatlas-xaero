@@ -210,5 +210,20 @@
   "screen.seedatlas_xaero.seed_input.blank": "种子不能为空",
   "screen.seedatlas_xaero.seed_input.invalid": "无法识别这个种子",
   "screen.seedatlas_xaero.seed_input.no_context": "没有找到当前世界或服务器",
-  "options.seedatlas_xaero.seed_bar_tip": "点击输入种子"
+  "options.seedatlas_xaero.seed_bar_tip": "点击输入种子",
+  "tooltip.seedatlas_xaero.seed": "输入或修改这个世界的种子",
+  "screen.seedatlas_xaero.seed_input.open": "种子：%s · 点击修改",
+  "screen.seedatlas_xaero.seed_input.open_empty": "还没有种子 · 点击输入",
+  "screen.seedatlas_xaero.seed_input.cracker": "不知道种子？SeedCrackerX 破解完会自动填到这里",
+  "screen.seedatlas_xaero.seed_input.cracker_missing": "不知道种子？装 SeedCrackerX 就能在游戏里破解，结果会自动填进来",
+  "screen.seedatlas_xaero.seed_input.state_solved": "破解完成，种子已自动填入",
+  "screen.seedatlas_xaero.seed_input.state_running": "正在破解…（一般 1～5 分钟）",
+  "screen.seedatlas_xaero.seed_input.state_ready": "数据够了，马上自动开始破解",
+  "screen.seedatlas_xaero.seed_input.state_more": "还差 常规 %s · 抬升 %s",
+  "screen.seedatlas_xaero.seed_input.clear_data": "清空已收集的结构数据",
+  "screen.seedatlas_xaero.seed_input.guide1": "① 跑图靠近沉船、沙漠神殿、冰屋、丛林神庙等结构",
+  "screen.seedatlas_xaero.seed_input.guide2": "② 进视野自动记录，一个给 8～9 点，进度条会涨",
+  "screen.seedatlas_xaero.seed_input.guide3": "③ 满 32/40 自动破解，1～5 分钟后种子自动填入",
+  "screen.seedatlas_xaero.seed_input.bits_base": "常规 %s/%s",
+  "screen.seedatlas_xaero.seed_input.bits_lift": "抬升 %s/%s"
 }
