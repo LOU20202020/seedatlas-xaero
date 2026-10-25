@@ -157,7 +157,7 @@ public final class SeedAtlasSettingsScreen extends SeedAtlasScreen {
 	public void onClose() {
 		this.commitValues();
 		SeedAtlasClientState.save();
-		// Closing the main settings also resumes after /seedatlas settings,
+		// Closing the main settings also resumes generation when it was opened from the map,
 		// whose parent is null. Nested settings return without calling this.
 		SeedAtlasXaeroIntegration.setHeavyWorkPaused(false);
 		this.minecraft.gui.setScreen(this.parent);

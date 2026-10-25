@@ -204,21 +204,6 @@ tasks.register('dimensionTileBenchmark', JavaExec) {
 	doFirst { workingDir.mkdirs() }
 }
 
-// Keep the loader-neutral client command tree equivalent across all builds.
-def commandTestClasses = layout.buildDirectory.dir('classes/commandTest')
-tasks.register('compileCommandTest', JavaCompile) {
-    dependsOn tasks.named('clientClasses')
-    source = fileTree('src/testCommands/java') { include '**/*.java' }
-    classpath = sourceSets.client.compileClasspath + sourceSets.client.output
-    destinationDirectory = commandTestClasses
-}
-tasks.register('commandRegistrationTest', JavaExec) {
-    dependsOn tasks.named('compileCommandTest')
-    classpath = files(commandTestClasses) + sourceSets.client.runtimeClasspath
-    mainClass = 'org.seedatlas.xaero.command.CommandRegistrationTest'
-}
-tasks.named('check') { dependsOn tasks.named('commandRegistrationTest') }
-
 // Run the runtime Xaero compatibility check (mixin targets, captured locals, linkage) without Minecraft.
 def xaeroTestClasses = layout.buildDirectory.dir('classes/xaeroCompatibilityTest')
 tasks.register('compileXaeroCompatibilityTest', JavaCompile) {

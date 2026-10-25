@@ -59,16 +59,7 @@
 
 左栏 11 类结构点击切换,右栏层级列表滚轮滚动,底部「复制坐标」。
 
-命令行(继承自上游):
-
-```
-/seedatlas seed <数字或文本>          设置当前地图的种子
-/seedatlas clear                      清除
-/seedatlas status                     查看当前上下文
-/seedatlas settings                   打开设置界面
-/seedatlas dimension-seed <nether|end> <种子>   单独设置下界/末地种子
-/seedatlas version <版本|auto>        指定生成用的游戏版本
-```
+点顶部那条 **种子 …· 主世界 · X … Z …** 就能改种子:输入数字或任意文本都行,确认后群系和结构立刻按新种子重铺。在哪个维度点的就只改哪个维度;主世界的种子同时给没有单独设置的下界和末地使用(末地/下界改过之后,界面里还能一键改回跟随主世界)。
 
 单人存档自动读取种子;多人服务器按 Xaero 的服务器上下文分别保存。
 
@@ -127,8 +118,9 @@ any structure to see its pieces, chests and **predicted loot** (items, stack siz
 Requires Fabric API and Xaero's World Map ≥ 1.47.0 (Java 25, Loader ≥ 0.19.5). Client-side only.
 
 Left column shows four labels (no button chrome, auto-placed below Xaero's own buttons):
-structure toggles, biome highlight, nearest structure, nearest biome. Everything else is
-configured through `/seedatlas` commands inherited from upstream.
+structure toggles, biome highlight, nearest structure, nearest biome. Click the seed bar along the
+top edge to type a seed (number or any text); it applies to the dimension the map is showing, and
+the Overworld seed also generates every dimension without its own.
 
 Loot prediction covers 11 structures that upstream generates pieces and loot salt for; types
 without data are greyed out rather than filled with guesses.

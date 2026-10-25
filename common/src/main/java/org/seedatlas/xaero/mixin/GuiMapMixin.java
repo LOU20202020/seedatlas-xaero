@@ -8,6 +8,8 @@ import net.minecraft.client.gui.components.Button;
 import org.seedatlas.xaero.gui.BiomeHighlightScreen;
 import org.seedatlas.xaero.gui.MarkerSettingsScreen;
 import org.seedatlas.xaero.gui.NearestScreen;
+import org.seedatlas.xaero.gui.SeedInputScreen;
+import org.seedatlas.xaero.nativeapi.Dimension;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -63,6 +65,15 @@ abstract class GuiMapMixin {
     private long seedAtlas$displayedRevision = Long.MIN_VALUE;
     @Unique
     private int seedAtlas$quickY = -1;
+    /** Seed bar rectangle, also the click target that opens the seed entry screen. */
+    @Unique
+    private int seedAtlas$barX;
+    @Unique
+    private int seedAtlas$barY;
+    @Unique
+    private int seedAtlas$barWidth;
+    @Unique
+    private int seedAtlas$barHeight;
 
     // Draw before Xaero reserves both renderers in its shared provider.
     @Inject(method = "extractRenderState", at = @At(
@@ -198,7 +209,10 @@ abstract class GuiMapMixin {
     private void seedAtlas$renderInfoBar(
         GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci
     ) {
-        if (GuiMap.hiddenUI) return;
+        if (GuiMap.hiddenUI) {
+            this.seedAtlas$barWidth = 0;
+            return;
+        }
         GuiMap map = (GuiMap)(Object)this;
         var seed = SeedAtlasClientState.activeSeed();
         String seedText = seed.isPresent() ? Long.toString(seed.getAsLong()) : "未设置";
@@ -214,10 +228,20 @@ abstract class GuiMapMixin {
         int z = (int)Math.round(this.cameraZ);
         String text = "种子 " + seedText + "  ·  " + dimension + "  ·  X " + x + "  Z " + z;
         var font = Minecraft.getInstance().font;
-        int width = font.width(text) + 12;
-        int top = 2;
-        graphics.fill(48, top, 48 + width, top + 14, 0x90000000);
-        graphics.text(font, Component.literal(text), 54, top + 4, 0xFFE8E8E8);
+        int barWidth = font.width(text) + 12;
+        int barX = 48;
+        int barY = 2;
+        int barHeight = 14;
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, 0x90000000);
+        graphics.text(font, Component.literal(text), barX + 6, barY + 4, 0xFFE8E8E8);
+        this.seedAtlas$barX = barX;
+        this.seedAtlas$barY = barY;
+        this.seedAtlas$barWidth = barWidth;
+        this.seedAtlas$barHeight = barHeight;
+        if (mouseX >= barX && mouseX < barX + barWidth && mouseY >= barY && mouseY < barY + barHeight) {
+            graphics.setTooltipForNextFrame(
+                Component.translatable("options.seedatlas_xaero.seed_bar_tip"), mouseX, mouseY);
+        }
     }
 
     @Unique
@@ -247,9 +271,17 @@ abstract class GuiMapMixin {
         net.minecraft.client.input.MouseButtonEvent event, boolean doubled,
         org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir
     ) {
-        if (this.seedAtlas$quickY < 0) return;
         int mx = (int)event.x();
         int my = (int)event.y();
+        if (!GuiMap.hiddenUI && this.seedAtlas$barWidth > 0
+            && mx >= this.seedAtlas$barX && mx < this.seedAtlas$barX + this.seedAtlas$barWidth
+            && my >= this.seedAtlas$barY && my < this.seedAtlas$barY + this.seedAtlas$barHeight) {
+            Minecraft.getInstance().gui.setScreen(
+                new SeedInputScreen((GuiMap)(Object)this, seedAtlas$currentDimension()));
+            cir.setReturnValue(true);
+            return;
+        }
+        if (this.seedAtlas$quickY < 0) return;
         if (mx < 0 || mx >= 20) return;
         int index = (my - this.seedAtlas$quickY) / 22;
         if (index < 0 || index >= 4) return;
@@ -261,6 +293,19 @@ abstract class GuiMapMixin {
             default -> Minecraft.getInstance().gui.setScreen(new NearestScreen(map, true));
         }
         cir.setReturnValue(true);
+    }
+
+    /** The dimension the map is showing right now; the seed entry applies to it. */
+    @Unique
+    private Dimension seedAtlas$currentDimension() {
+        try {
+            var dim = ((GuiMap)(Object)this).getMapProcessor().getMapWorld().getCurrentDimension().getDimId();
+            if (dim.equals(net.minecraft.world.level.Level.NETHER)) return Dimension.NETHER;
+            if (dim.equals(net.minecraft.world.level.Level.END)) return Dimension.END;
+        } catch (RuntimeException ignored) {
+            // dimension can swap mid-frame
+        }
+        return Dimension.OVERWORLD;
     }
 
     @Inject(method = "removed", at = @At("HEAD"))

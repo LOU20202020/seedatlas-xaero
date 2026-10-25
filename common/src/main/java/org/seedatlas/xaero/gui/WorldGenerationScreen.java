@@ -13,7 +13,6 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import org.seedatlas.xaero.command.SeedAtlasCommands;
 import org.seedatlas.xaero.config.SeedAtlasClientState;
 import org.seedatlas.xaero.nativeapi.GameVersion;
 import org.seedatlas.xaero.nativeapi.SeedAtlasNative;
@@ -56,12 +55,20 @@ public final class WorldGenerationScreen extends SeedAtlasScreen {
 		graphics.centeredText(this.font, this.title, this.width / 2, 14, -1);
 		Component heading = SeedAtlasClientState.currentContextKey().isEmpty()
 			? Component.translatable("screen.seedatlas_xaero.game_version.no_context")
-			: Component.translatable("screen.seedatlas_xaero.game_version", SeedAtlasCommands.gameVersionName());
+			: Component.translatable("screen.seedatlas_xaero.game_version", gameVersionName());
 		graphics.centeredText(this.font, heading, this.width / 2, 62, 0xFFA0A0A0);
 		Component note = SeedAtlasNative.supports(GameVersion.ALL.getLast())
 			? Component.translatable("screen.seedatlas_xaero.game_version.note")
 			: Component.translatable("screen.seedatlas_xaero.game_version.unsupported", GameVersion.NEWEST.name());
 		graphics.centeredText(this.font, note, this.width / 2, this.height - 42, 0xFFA0A0A0);
+	}
+
+	/** "1.21.5 – 26.1.2", or "Auto (26.3)" while the context follows the running game. */
+	private static Component gameVersionName() {
+		GameVersion version = SeedAtlasClientState.activeGameVersion();
+		return SeedAtlasClientState.gameVersionAutomatic()
+			? Component.translatable("options.seedatlas_xaero.game_version.auto", version.name())
+			: Component.literal(version.label());
 	}
 
 	@Override

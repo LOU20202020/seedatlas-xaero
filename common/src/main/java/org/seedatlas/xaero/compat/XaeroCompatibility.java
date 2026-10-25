@@ -40,7 +40,6 @@ public final class XaeroCompatibility {
     /** Everything that touches Xaero is reachable from these classes. */
     static final List<String> ROOTS = List.of(
         "org/seedatlas/xaero/SeedAtlasXaero",
-        "org/seedatlas/xaero/command/SeedAtlasCommands",
         "org/seedatlas/xaero/mixin/GuiMapMixin",
         "org/seedatlas/xaero/mixin/BranchTextureRendererMixin",
         "org/seedatlas/xaero/mixin/BranchRegionTextureMixin",
