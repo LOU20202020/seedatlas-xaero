@@ -217,7 +217,8 @@ final class SeedAtlasStructureReader extends ElementReader<
                 var seed = SeedAtlasClientState.activeSeed();
                 if (seed.isEmpty()) return;
                 Minecraft.getInstance().gui.setScreen(
-                    new StructureDetailScreen(screen).withSeed(seed.getAsLong()).withType(marker.type()));
+                    new StructureDetailScreen(screen).withSeed(seed.getAsLong())
+                        .withTarget(marker.x(), marker.z()).withType(marker.type()));
             }
         }.setActive(StructureTypes.of(marker.type()) != null));
         options.add(new RightClickOption("menu.seedatlas_xaero.copy_coordinates", options.size(), target) {

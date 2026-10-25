@@ -47,7 +47,8 @@ public final class StructureDetail {
     private static final long ITEM_ENCH_ID_OFF = 12L;
     private static final long ITEM_ENCH_LVL_OFF = 36L;
 
-    public record Loot(String itemId, int count, List<String> enchantments) {}
+    /** id = raw registry id ("minecraft:diamond_sword"), name = in-game display name, enchantments = localized "锋利 3". */
+    public record Loot(String id, String name, int count, List<String> enchantments) {}
     public record Chest(int x, int y, int z, String table, List<Loot> items) {}
     public record Piece(String name, int x, int y, int z, List<Chest> chests) {}
     public record Result(String header, List<Piece> pieces, String error) {
@@ -62,6 +63,8 @@ public final class StructureDetail {
     private static MethodHandle init;
     private static MethodHandle stronghold;
     private static MethodHandle structureAt;
+    private static MethodHandle piecesAt;
+    private static MethodHandle strongholdAt;
     private static MethodHandle string;
     private static MethodHandle loot;
     private static MethodHandle enchantName;
@@ -88,6 +91,12 @@ public final class StructureDetail {
             structureAt = downcall(linker, symbols, "sax_detail_structure_at",
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
                     ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+            piecesAt = downcall(linker, symbols, "sax_detail_pieces",
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+            strongholdAt = downcall(linker, symbols, "sax_detail_stronghold_at",
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
             enchantName = downcall(linker, symbols, "sax_detail_enchant_name",
                 FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
             LOGGER.info("Seed Atlas structure detail library loaded from {}", lib);
@@ -114,7 +123,11 @@ public final class StructureDetail {
         try (InputStream input = StructureDetail.class.getResourceAsStream(resource)) {
             if (input == null) throw new IllegalStateException("bundled native missing: " + resource);
             byte[] bytes = input.readAllBytes();
-            if (!Files.isRegularFile(target) || Files.size(target) != bytes.length) {
+            boolean stale = !Files.isRegularFile(target) || Files.size(target) != bytes.length;
+            if (!stale) {
+                stale = !java.util.Arrays.equals(Files.readAllBytes(target), bytes);
+            }
+            if (stale) {
                 Files.write(target, bytes);
             }
         }
@@ -127,14 +140,38 @@ public final class StructureDetail {
     }
 
     /** Predicts the structure nearest to (x, z) for the given cubiomes structure type. */
+    /** Nearest structure of this type around the given block position. */
     public static Result load(long seed, int stype, int x, int z, int dim) {
+        return query(seed, stype, dim, buffer -> (int) structureAt.invokeExact(stype, x, z, buffer, MAX_PIECES));
+    }
+
+    /**
+     * Exactly the structure of the given region - used when the player right-clicks a map marker,
+     * so the panel describes that marker instead of whichever neighbour happens to be closer.
+     */
+    /** The stronghold nearest to a marker: strongholds are not laid out on a region grid. */
+    public static Result loadStronghold(long seed, int blockX, int blockZ, int dim) {
+        return query(seed, 27, dim,
+            buffer -> (int) strongholdAt.invokeExact(blockX, blockZ, buffer, MAX_PIECES));
+    }
+
+    public static Result loadRegion(long seed, int stype, int regionX, int regionZ, int dim) {
+        return query(seed, stype, dim,
+            buffer -> (int) piecesAt.invokeExact(stype, regionX, regionZ, buffer, MAX_PIECES));
+    }
+
+    private interface PieceQuery {
+        int run(MemorySegment buffer) throws Throwable;
+    }
+
+    private static Result query(long seed, int stype, int dim, PieceQuery pieceQuery) {
         if (!ensureLoaded()) return Result.failed("结构详情引擎未加载：" + unavailableReason);
         try (Arena local = Arena.ofConfined()) {
             int rc = (int) init.invokeExact(seed, -1, dim);
             if (rc != 0) return Result.failed("初始化失败（" + rc + "）");
 
             MemorySegment buffer = local.allocate(PIECE_LAYOUT, MAX_PIECES);
-            int count = (int) structureAt.invokeExact(stype, x, z, buffer, MAX_PIECES);
+            int count = pieceQuery.run(buffer);
             if (count < 0) return Result.failed("没有找到该结构（" + count + "）");
 
             List<Piece> pieces = new ArrayList<>();
@@ -189,10 +226,11 @@ public final class StructureDetail {
             MemorySegment levels = item.asSlice(ITEM_ENCH_LVL_OFF, 24);
             List<String> ench = new ArrayList<>();
             for (int e = 0; e < ec && e < 6; e++) {
-                ench.add(readEnchant(ids.getAtIndex(ValueLayout.JAVA_INT, e))
+                ench.add(Localize.enchant(readEnchant(ids.getAtIndex(ValueLayout.JAVA_INT, e)))
                     + " " + levels.getAtIndex(ValueLayout.JAVA_INT, e));
             }
-            out.add(new Loot(Localize.item(readString(itemOff)), count, ench));
+            String rawId = readString(itemOff);
+            out.add(new Loot(rawId, Localize.item(rawId), count, ench));
         }
         return out;
     }
